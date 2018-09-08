@@ -73,6 +73,16 @@ class BaseExperiment(pyglet.window.Window):
         disp_params['Monitors'] = _get_display_name()
         self.params.update(disp_params)
         self.params['Trials'] = self.trials
+        self.params['TrialDelay'] = self.trial_delay
+        self.params['OnWidth'] = str(on_width)
+        self.params['BackgroundColor'] = str(bckgrnd_color)
+        if self.stim:
+            self.params['StimSize'] = stim.size
+            self.params['StimColor'] = stim.color
+            self.params['StimPosition'] = stim.position
+
+        experiment_type = self.params['Experiment'].split('Exp')[0]
+        self.filename =  '{}_{}.csv'.format(experiment_type.lower(), datetime.now().strftime('%Y%m%d_%H%M%S'))
 
     def on_close(self):
         """Ends the experiment by closing the app window and disconnecting arduino"""
@@ -114,12 +124,8 @@ class BaseExperiment(pyglet.window.Window):
     def save(self, filename=None):
         """ Save data into a csv file """
 
-        if not filename:
-            experiment_type = self.params['Experiment'].split('Exp')[0]
-            filename = '{}_{}.csv'.format(experiment_type.lower(), datetime.now().strftime('%Y%m%d_%H%M%S'))
-        self.filename = filename  # TODO: This is dumb.  Fix this!
-
-        with open(filename, "w", newline='') as csv_file:
+        save_filename = self.filename if not filename else filename
+        with open(save_filename, "w", newline='') as csv_file:
             header = ['{}: {}\n'.format(key, value) for key, value in self.params.items()]
             csv_file.writelines(header)
             csv_file.write("\n")
@@ -147,8 +153,9 @@ class DisplayExperiment(BaseExperiment):
         self.clear()
         self.flip()
         sleep(next(self.off_width))
-        dd = [(self.current_trial,) + el for el in self.arduino.read()]
-        self.data.extend(dd) if self.arduino else None
+        if self.arduino:
+            dd = [(self.current_trial,) + el for el in self.arduino.read()]
+            self.data.extend(dd) if self.arduino else None
 
 
 class TrackingExperiment(BaseExperiment):

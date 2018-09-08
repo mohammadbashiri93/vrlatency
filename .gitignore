@@ -1,11 +1,10 @@
 vrlatency.egg-info/
-Measurements/
 build/
 dist/
 docs/_build
-docs/_static
-docs/_template
+data/
 docs_guide.txt
+docs/_build
 *.pyc
 *.pyd
 *~
@@ -14,3 +13,4 @@ docs_guide.txt
 .cache
 *.egg-info
 .eggs
+set_secrets.bat

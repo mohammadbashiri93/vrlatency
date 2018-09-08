@@ -62,7 +62,8 @@ common_options = [
     click.option('--baudrate', default=250000, help="Serial communication baudrate"),
     click.option('--trials', default=20, help="Number of trials for measurement"),
     click.option('--interval', default=.05, help="Time duration that a stimulus is shown in a trial, in seconds."),
-    click.option('--jitter/--no-jitter', default=True, help="Whether to add a randomized delay to the onset of stimulus presentation.")
+    click.option('--jitter/--no-jitter', default=True, help="Whether to add a randomized delay to the onset of stimulus presentation."),
+    # TODO: Add 'output' option here.
 ]
 
 
@@ -78,7 +79,9 @@ def cli():
 @click.option('--delay', default=.03, help="start delay length (secs) of trial to wait for stimulus to turn off")
 @click.option('--screen', default=0, help="Monitor number to display stimulus on.")
 @click.option('--allmodes/--singlemode', default=False, help="Whether to run experiment repeatedly, for all screen modes.")
-def display(port, baudrate, trials, stimsize, delay, screen, interval, jitter, allmodes):
+@click.option('--output', default='.', type=click.Path(exists=True, file_okay=False, dir_okay=True, writable=True))
+def display(port, baudrate, trials, stimsize, delay, screen, interval, jitter, allmodes, output):
+
     arduino = vrl.Arduino.from_experiment_type(experiment_type='Display', port=port, baudrate=baudrate)
 
     stim = vrl.Stimulus(size=stimsize)
@@ -96,12 +99,13 @@ def display(port, baudrate, trials, stimsize, delay, screen, interval, jitter, a
             monitor.set_mode(mode)
             time.sleep(10)
 
-        exp = vrl.DisplayExperiment(arduino=arduino, trials=trials, fullscreen=True, on_width=on_width,
+        exp = vrl.DisplayExperiment(arduino=arduino,
+                                    trials=trials, fullscreen=True, on_width=on_width,
                                     trial_delay=delay, screen_ind=screen, stim=stim)
         exp.run()
-        exp.save()
+        exp.save(filename=path.join(output, exp.filename))
 
-        df = vrl.read_csv(exp.filename)
+        df = vrl.read_csv(path.join(output, exp.filename))
         df['TrialTime'] = df.groupby('Trial').Time.apply(lambda x: x - x.min())
 
         click.echo(df.head())
