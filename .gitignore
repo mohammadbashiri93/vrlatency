@@ -1,6 +1,7 @@
 vrlatency.egg-info/
 build/
 dist/
+docs/_build
 data/
 docs_guide.txt
 docs/_build
