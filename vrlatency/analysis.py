@@ -104,55 +104,50 @@ def get_display_dataframe(filename):
     return df
 
 
+def shift_by_cross_corr(test_sensor, ref_sensor, offset_range=(-20, 20)):
+    s1, s2 = test_sensor.values, ref_sensor.values
+    offsets = 100
+    s1_mat = np.ndarray(buffer=s1, shape=(len(s1)-offsets, offsets), strides=(8, 8), dtype=s1.dtype)
+    residuals = np.sum((s1_mat.T - s2[:-offsets]) ** 2, axis=1)
+    return np.argmin(residuals)
+
+
 def display_brightness_figure(filename, ax1=None, ax2=None):
 
     df = get_display_dataframe(filename)
     session = df.Session.values[0]
-    latencies = df.groupby('Session').apply(get_display_latencies, thresh=.75).unstack()
+    thresh = .75
+    latencies = df.groupby('Session').apply(get_display_latencies, thresh=thresh).unstack()
     latencies.name = 'DisplayLatency'
     latencies = latencies.reset_index()
 
     dfl = pd.merge(df, latencies, on=['Session', 'Trial'])
     dfl['TrialTransitionTime'] = dfl['TrialTime'] - dfl['DisplayLatency']
 
-    hh = np.array(get_transition_samplenum(dfl))
-    hh = hh[~np.isnan(hh)]
-    hh = hh.astype(int)
+    dd = dfl.copy()
+    sampling_rate = np.diff(dd.TrialTime.values[:2])[0]
+    ref_trial = dd[dd.DisplayLatency == dd.DisplayLatency.min()]
+    dd['TransitionOffset'] = dd.groupby('Trial').SensorBrightness.transform(shift_by_cross_corr,
+                                                                            ref_sensor=ref_trial.SensorBrightness)
+    dd['TrialTransitionTime'] = dd['TrialTime'] - dd['TransitionOffset'] * sampling_rate
 
     if (not ax1) and (not ax2):
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), gridspec_kw={'width_ratios': [2, 1]}, sharey=True)
 
-    ax1.scatter(dfl.TrialTime, dfl.SensorBrightness, c='k', s=.2, alpha=.2)
+    ax1.scatter(dd.TrialTime, dd.SensorBrightness, c='.3', s=.2, alpha=.2)
+    ax1.scatter(dd.TrialTransitionTime, dd.SensorBrightness, c='r', s=.2, alpha=.2)
 
-    for test_trialnum in tqdm(range(dfl.Trial.min(), dfl.Trial.max(), 1)):
-
-        test_trial = dfl[dfl.Trial == test_trialnum]
-        fastest_transtion_sample = hh.mean().round().astype(int)
-        try:
-            test_transition_sample = test_trial[test_trial.TrialTransitionTime == 0].Sample.values[0]
-            offset = test_transition_sample - fastest_transtion_sample
-        except IndexError:
-            offset = -1
-
-        if offset >= 0:
-            ax1.scatter(test_trial.TrialTime.values[offset:] +
-                        (test_trial.TrialTime.values.min() - test_trial.TrialTime.values[offset]),
-                        test_trial.SensorBrightness.values[offset:], c='r', s=.1, alpha=.5)
-
-    thresh = 0.75
-    ax1.hlines([perc_range(dfl['SensorBrightness'], thresh)], *ax1.get_xlim(), 'b', label='Threshold', linewidth=2,
+    ax1.hlines([perc_range(dd['SensorBrightness'], thresh)], *ax1.get_xlim(), 'b', label='Threshold', linewidth=2,
                linestyle='dotted')
 
-    sns.distplot(dfl['SensorBrightness'].values, ax=ax2, vertical=True, hist_kws={'color': 'k'}, kde_kws={'alpha': 0})
+    sns.distplot(dd['SensorBrightness'].values, ax=ax2, vertical=True, hist_kws={'color': 'k'}, kde_kws={'alpha': 0})
     ax2.set(xticklabels='')
-    if ax1 and ax2:
-        ax2.set_ylim(*ax1.get_ylim())
-
     ax1.set(xlabel='Trial Time (ms)', ylabel='Brightness')
 
+    ax2.set_ylim(*ax1.get_ylim())
     plt.suptitle(session, y=1.02)
     plt.tight_layout(w_pad=0)
-    # plt.show()
+    plt.show()
 
 
 def display_latency_figure(filename, ax1=None, ax2=None):
