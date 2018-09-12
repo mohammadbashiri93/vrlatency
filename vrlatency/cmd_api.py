@@ -105,20 +105,22 @@ def display(port, baudrate, trials, stimsize, delay, screen, interval, jitter, a
         exp.run()
         exp.save(filename=path.join(output, exp.filename))
 
-        df = vrl.read_csv(path.join(output, exp.filename))
-        df['TrialTime'] = df.groupby('Trial').Time.apply(lambda x: x - x.min())
+        # df = vrl.read_csv(path.join(output, exp.filename))
+        # df['TrialTime'] = df.groupby('Trial').Time.apply(lambda x: x - x.min())
+        #
+        # click.echo(df.head())
+        # latencies = vrl.get_display_latencies(df)
+        #
+        # fig, (ax1, ax2, ax3) = plt.subplots(ncols=3)
+        # sns.distplot(df['SensorBrightness'], bins=50, ax=ax1)
+        # ax2.scatter(df['TrialTime'] / 1000, df['SensorBrightness'], alpha=.1, s=.2)
+        # ax2.hlines([perc_range(df.SensorBrightness, .75)], *ax2.get_xlim())
+        #
+        # sns.distplot(latencies.iloc[1:] / 1000., bins=80, ax=ax3)
+        # ax3.set_xlim(0, 50)
+        # plt.show()
 
-        click.echo(df.head())
-        latencies = vrl.get_display_latencies(df)
-
-        fig, (ax1, ax2, ax3) = plt.subplots(ncols=3)
-        sns.distplot(df['SensorBrightness'], bins=50, ax=ax1)
-        ax2.scatter(df['TrialTime'] / 1000, df['SensorBrightness'], alpha=.1, s=.2)
-        ax2.hlines([perc_range(df.SensorBrightness, .75)], *ax2.get_xlim())
-
-        sns.distplot(latencies.iloc[1:] / 1000., bins=80, ax=ax3)
-        ax3.set_xlim(0, 50)
-        plt.show()
+        vrl.analysis.display_figures(exp.filename)
 
 
 @cli.command()
