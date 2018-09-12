@@ -90,17 +90,18 @@ def get_transition_samplenum(session):
     return transition_samples
 
 
-def get_display_dataframe(filename):
+def read_display_df(filename):
     """Return dataframe object needed for the analysis"""
     session = filename.split('.')[0]
     df = read_csv(filename)
-    df['Session'] = session
     df['Time'] /= 1000
-    trials = df.groupby(['Session', 'Trial'])
-    df['TrialTime'] = trials.Time.apply(lambda x: x - x.min())
-    df['Sample'] = trials.cumcount()
+
+    df['TrialTime'] = df.groupby('Trial').Time.apply(lambda x: x - x.min())
+    df['Sample'] = df.groupby('Trial').cumcount()
+    df['Session'] = session
     df['Session'] = pd.Categorical(df['Session'])
     df = df.reindex(['Session', 'Trial', 'Sample', 'Time', 'TrialTime', 'SensorBrightness'], axis=1)
+
     return df
 
 
@@ -141,90 +142,97 @@ def shift_by_sse(dd):
     return dd
 
 
-def display_brightness_figure(filename, ax1=None, ax2=None):
+def transform_display_dataframe(df, thresh=.75):
 
-    want_to_draw = not bool(ax1 and ax2)
+    latencies = get_display_latencies(df, thresh=thresh).to_frame().reset_index()
+    dfl = pd.merge(df, latencies, on='Trial')
+    dfl['TrialTransitionTime'] = dfl['TrialTime'] - dfl['DisplayLatency']
+
+    return dfl
+
+
+def get_display_df(filename):
+
+    df = read_display_df(filename)
+    dfl = transform_display_dataframe(df)
+    return shift_by_sse(dfl.copy())
+
+
+
+def plot_display_brightness_over_session(dd, ax=None):
+    """"""
+    ax = ax if ax else plt.gcf()
+
     my_cmap = cm.gray_r
     my_cmap.set_bad(color='w')
 
-    df = get_display_dataframe(filename)
-    session = df.Session.values[0]
-    thresh = .75
-    latencies = df.groupby('Session').apply(get_display_latencies, thresh=thresh).unstack()
-    latencies.name = 'DisplayLatency'
-    latencies = latencies.reset_index()
-
-    dfl = pd.merge(df, latencies, on=['Session', 'Trial'])
-    dfl['TrialTransitionTime'] = dfl['TrialTime'] - dfl['DisplayLatency']
-
-    dd = shift_by_sse(dfl.copy())
-
-    if want_to_draw:
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), gridspec_kw={'width_ratios': [5, 2]}, sharey=True)
-
-    # plot all the trials at their actual time
     nsamples_per_trial = dd.groupby('Trial')['DisplayLatency'].agg(len).min()
     H, xedges, yedges = np.histogram2d(dd.TrialTime, dd.SensorBrightness, bins=(nsamples_per_trial, 200))
     H = H.T
     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-
-    ax1.imshow(H, interpolation='nearest', origin='low', cmap=my_cmap, aspect='auto',
+    ax.imshow(H, interpolation='nearest', origin='low', cmap=my_cmap, aspect='auto',
                extent=extent, norm=colors.LogNorm())
 
-    # plot the shifted trials
     mean_latency = dd.groupby('Trial').DisplayLatency.mean().mean()
     for trialnum, trial in dd.groupby('Trial'):
-        ax1.plot(trial.TrialTransitionTime + mean_latency, trial.SensorBrightness, c='r', linewidth=1, alpha=.01)
+        ax.plot(trial.TrialTransitionTime + mean_latency, trial.SensorBrightness, c='r', linewidth=1, alpha=.01)
 
-    # plot the threshold
-    ax1.hlines([perc_range(dd['SensorBrightness'], thresh)], *ax1.get_xlim(), 'b',
-               label='Threshold', linewidth=2, linestyle='dotted')
+    thresh = .75  # TODO: this must be an input or computed differently
+    ax.hlines([perc_range(dd['SensorBrightness'], thresh)], *ax.get_xlim(), 'b', label='Threshold', linewidth=2,
+               linestyle='dotted')
 
-    # plot the histogram of the brightness values
-    sns.distplot(dd['SensorBrightness'].values, ax=ax2, vertical=True, hist_kws={'color': 'k'}, kde_kws={'alpha': 0})
+    return ax
+
+
+def plot_display_brightness_distribution(sensor_brightness, ax=None):
+    ax = ax if ax else plt.gcf()
+    sns.distplot(sensor_brightness, hist_kws={'color': 'k'}, kde_kws={'alpha': 0}, vertical=True, ax=ax)
+    return ax
+
+
+def plot_display_latency_over_session(trials, latencies, ax=None):
+    """Makes a line plot of latencies over the course of a session."""
+    ax = ax if ax else plt.gcf()
+
+    ax.plot(trials, latencies, c='k', linewidth=.5)
+    ax.set(xlabel='Trial number', ylabel='Latency (ms)')
+
+    return ax
+
+
+def plot_display_latency_distribution(latencies, ax=None):
+
+    ax = ax if ax else plt.gcf()
+    sns.distplot(latencies[np.isnan(latencies) == False],
+                 hist=True, color="k", kde_kws={"linewidth": 3, "alpha": 1}, vertical=True)
+
+    return ax
+
+
+def plot_display_figures(filename):
+    """Returns a figure with all info concerning display experiment latencies."""
+
+    dd = get_display_df(filename)
+    session = dd.Session.values[0]
+
+
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 5), gridspec_kw={'width_ratios': [3, 1]}, sharey=True)
+    fig.tight_layout(w_pad=0)
+
+
+    plot_display_brightness_over_session(dd, ax=ax1)
+    plot_display_brightness_distribution(sensor_brightness=dd['SensorBrightness'], ax=ax2)
     ax1.set_ylim(*ax2.get_ylim())
-    ax2.set_xticklabels(''), ax2.set_yticklabels('')
+    ax2.set(xticklabels='', yticklabels='')
     ax1.set(xlabel='Time (ms)', ylabel='Brightness')
-    plt.suptitle(session)
-    plt.tight_layout(w_pad=0)
 
-    if want_to_draw:
-        plt.subplots_adjust(top=.9)
-        plt.show()
+    plot_display_latency_over_session(trials=dd['Trial'], latencies=dd['DisplayLatency'], ax=ax3)
+    plot_display_latency_distribution(latencies=dd['DisplayLatency'], ax=ax4)
+    ax3.set_ylim(*ax4.get_ylim())
+    ax4.set(xticklabels='', yticklabels='')
+    ax3.set(xlabel='Trial', ylabel='Latency (ms)')
 
+    fig.suptitle(session)
+    fig.subplots_adjust(top=.9)
 
-def display_latency_figure(filename, ax1=None, ax2=None):
-
-    want_to_draw = not bool(ax1 and ax2)
-
-    df = get_display_dataframe(filename)
-    session = df.Session.values[0]
-    latencies = df.groupby('Session').apply(get_display_latencies, thresh=.75).unstack()
-    latencies.name = 'DisplayLatency'
-    latencies = latencies.reset_index()
-
-    dl = latencies[latencies['Session'] == session]
-
-    if want_to_draw:
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), gridspec_kw={'width_ratios': [3, 1]}, sharey=True)
-
-    ax1.plot(dl['Trial'], dl['DisplayLatency'], c='k', linewidth=.5)
-    sns.distplot(dl['DisplayLatency'].dropna().values, hist=False, color="k", kde_kws={"linewidth": 3, "alpha": 1},
-                 ax=ax2, vertical=True)
-    ax1.set_ylim(*ax2.get_ylim())
-    ax2.set_xticklabels(''), ax2.set_yticklabels('')
-    ax1.set(xlabel='Trial number', ylabel='Latency (ms)')
-    plt.tight_layout(w_pad=0)
-
-    if want_to_draw:
-        plt.suptitle(session)
-        plt.subplots_adjust(top=.9)
-        plt.show()
-
-
-def display_figures(filename):
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(7, 6), gridspec_kw={'width_ratios': [5, 2]})
-    display_brightness_figure(filename, ax1=ax1, ax2=ax2)
-    display_latency_figure(filename, ax1=ax3, ax2=ax4)
-    plt.subplots_adjust(top=.9)
-    plt.show()
+    return fig
