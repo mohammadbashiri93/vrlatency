@@ -156,7 +156,8 @@ def plot_shifted_brightness_over_session(time, sensor_brightness, shift_by, tria
     """
     ax = ax if ax else plt.gca()
     for trial in trial_idx.unique():
-        ax.plot(time[trial_idx == trial] + shift_by, sensor_brightness[trial_idx == trial], c='r', linewidth=1, alpha=.01)
+        # ax.scatter(time[trial_idx == trial] + shift_by, sensor_brightness[trial_idx == trial])#, c='r', linewidth=1)#, alpha=.01)
+        ax.plot(time[trial_idx == trial] + shift_by, sensor_brightness[trial_idx == trial])#, c='r', linewidth=1)#, alpha=.01)
 
     return ax
 

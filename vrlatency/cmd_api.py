@@ -73,7 +73,7 @@ def cli():
 
 
 @cli.command()
-@simplify_exception_output(verbose=True)
+# @simplify_exception_output(verbose=True)
 @add_options(common_options)
 @click.option('--stimsize', default=10, help="Size of light stimulus projected onscreen.")
 @click.option('--delay', default=.03, help="start delay length (secs) of trial to wait for stimulus to turn off")
@@ -85,7 +85,7 @@ def display(port, baudrate, trials, stimsize, delay, screen, interval, jitter, a
 
     arduino = vrl.Arduino.from_experiment_type(experiment_type='Display', port=port, baudrate=baudrate, nsamples=nsamples)
 
-    stim = vrl.Stimulus(size=stimsize)
+    stim = vrl.Stimulus(size=stimsize, color=(255, 255, 255))
     on_width = [interval, interval * 2] if jitter else interval
 
     monitor = vrl.screens[screen]
@@ -108,7 +108,7 @@ def display(port, baudrate, trials, stimsize, delay, screen, interval, jitter, a
 
         df = read_csv(path=path.join(output, exp.filename))  # TODO: fix inconsistent arg name! path or filename!?
         session_name = exp.filename.split('.')[0]
-        df_transformed = transform_display_df(df, session=session_name, thresh=.8)
+        df_transformed = transform_display_df(df, session=session_name, thresh=.2)
         df_shifted = shift_by_sse(df_transformed.copy())
         plot_display_figures(df_shifted)
         plt.show()
