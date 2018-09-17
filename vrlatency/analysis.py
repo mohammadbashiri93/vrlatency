@@ -144,12 +144,19 @@ def shift_by_sse(dd):
     return dd
 
 
-def plot_shifted_brightness_over_session(dd, ax=None):
-    """creates a plot of all the shifted (overlaid on each other) brightness values over a single session"""
+def plot_shifted_brightness_over_session(time, sensor_brightness, shift_by, trial_idx, ax=None):
+    """creates a plot of all the shifted (overlaid on each other) brightness values over a single session
+
+    Args:
+        time: time points as the x-axis
+        sesnor_brightness: brightness values
+        shift_by (float): a single value which add an offset to the time points
+        trial_idx: trial number of every datapoint. This gives the function the flexibility to accept arrays from a
+        session with non-equal samples per trial
+    """
     ax = ax if ax else plt.gca()
-    mean_latency = dd.groupby('Trial').DisplayLatency.mean().mean()
-    for trialnum, trial in dd.groupby('Trial'):
-        ax.plot(trial.TrialTransitionTime + mean_latency, trial.SensorBrightness, c='r', linewidth=1, alpha=.01)
+    for trial in trial_idx.unique():
+        ax.plot(time[trial_idx == trial] + shift_by, sensor_brightness[trial_idx == trial], c='r', linewidth=1, alpha=.01)
 
     return ax
 
@@ -161,7 +168,7 @@ def plot_brightness_threshold(sensor_brightness, thresh=.75, ax=None):
     return ax
 
 def plot_display_brightness_over_session(trial_time, sensor_brightness, nsamples_per_trial, ax=None):
-    """"""
+    """Creates a histograme of the brightness values"""
     ax = ax if ax else plt.gca()
     my_cmap = cm.gray_r
     my_cmap.set_bad(color='w')
@@ -175,7 +182,7 @@ def plot_display_brightness_over_session(trial_time, sensor_brightness, nsamples
 
 
 def plot_display_brightness_distribution(sensor_brightness, ax=None):
-    """"""
+    """Creates the distribution of the brightness values"""
     ax = ax if ax else plt.gca()
     sns.distplot(sensor_brightness, hist_kws={'color': 'k'}, kde_kws={'alpha': 0}, vertical=True, ax=ax)
     return ax
@@ -190,7 +197,7 @@ def plot_display_latency_over_session(trials, latencies, ax=None):
 
 
 def plot_display_latency_distribution(latencies, ax=None):
-    """"""
+    """Creates the distribution of the latency values"""
     ax = ax if ax else plt.gca()
     sns.distplot(latencies[np.isnan(latencies) == False],
                  hist=True, color="k", kde_kws={"linewidth": 3, "alpha": 1}, vertical=True)
@@ -207,7 +214,11 @@ def plot_display_figures(dd):
     plot_display_brightness_over_session(trial_time=dd['TrialTime'], sensor_brightness=dd['SensorBrightness'],
                                          nsamples_per_trial=dd.groupby('Trial')['DisplayLatency'].agg(len).min(),
                                          ax=ax1)
-    plot_shifted_brightness_over_session(dd, ax=ax1)
+
+    mean_latency = dd.groupby('Trial').DisplayLatency.mean().mean()
+    plot_shifted_brightness_over_session(time=dd['TrialTransitionTime'], sensor_brightness=dd['SensorBrightness'],
+                                         trial_idx = dd['Trial'], shift_by=mean_latency, ax=ax1)
+
     plot_brightness_threshold(sensor_brightness=dd['SensorBrightness'], thresh=dd['ThreshPerc'].values[0], ax=ax1)
     plot_display_brightness_distribution(sensor_brightness=dd['SensorBrightness'], ax=ax2)
     ax1.set_ylim(*ax2.get_ylim())
