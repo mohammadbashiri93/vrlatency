@@ -220,13 +220,13 @@ def plot_display_figures(dd):
                                          trial_idx = dd['Trial'], shift_by=mean_latency, ax=ax1)
 
     plot_brightness_threshold(sensor_brightness=dd['SensorBrightness'], thresh=dd['ThreshPerc'].values[0], ax=ax1)
-    plot_display_brightness_distribution(sensor_brightness=dd['SensorBrightness'], ax=ax2)
+    plot_display_brightness_distribution(sensor_brightness=dd['SensorBrightness'].values, ax=ax2)
     ax1.set_ylim(*ax2.get_ylim())
     ax2.set(xticklabels='', yticklabels='')
     ax1.set(xlabel='Time (ms)', ylabel='Brightness')
 
     plot_display_latency_over_session(trials=dd['Trial'], latencies=dd['DisplayLatency'], ax=ax3)
-    plot_display_latency_distribution(latencies=dd['DisplayLatency'], ax=ax4)
+    plot_display_latency_distribution(latencies=dd['DisplayLatency'].values, ax=ax4)
     ax3.set_ylim(*ax4.get_ylim())
     ax4.set(xticklabels='', yticklabels='')
     ax3.set(xlabel='Trial', ylabel='Latency (ms)')
