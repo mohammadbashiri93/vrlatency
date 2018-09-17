@@ -80,9 +80,10 @@ def cli():
 @click.option('--screen', default=0, help="Monitor number to display stimulus on.")
 @click.option('--allmodes/--singlemode', default=False, help="Whether to run experiment repeatedly, for all screen modes.")
 @click.option('--output', default='.', type=click.Path(exists=True, file_okay=False, dir_okay=True, writable=True))
-def display(port, baudrate, trials, stimsize, delay, screen, interval, jitter, allmodes, output):
+@click.option('--nsamples', default=200, type=int)
+def display(port, baudrate, trials, stimsize, delay, screen, interval, jitter, allmodes, output, nsamples):
 
-    arduino = vrl.Arduino.from_experiment_type(experiment_type='Display', port=port, baudrate=baudrate)
+    arduino = vrl.Arduino.from_experiment_type(experiment_type='Display', port=port, baudrate=baudrate, nsamples=nsamples)
 
     stim = vrl.Stimulus(size=stimsize)
     on_width = [interval, interval * 2] if jitter else interval

@@ -1,2 +1,2 @@
 call activate vrlatency3
-call measure_latency display --port COM11 --trials 20 --jitter --nsamples 400 --stimsize 1000 --screen 1 --singlemode --output C:\Users\sirotalab\Desktop\Measurement
+call measure_latency display --port COM9 --trials 10 --jitter --nsamples 450 --stimsize 250 --screen 1 --singlemode --output Z:\\nickdg\vrlatency

@@ -1,7 +1,10 @@
 vrlatency.egg-info/
 build/
 dist/
-data/
+data
+docs/_build
+docs/_static
+docs/_template
 docs_guide.txt
 docs/_build
 *.pyc
@@ -13,3 +16,4 @@ docs/_build
 *.egg-info
 .eggs
 set_secrets.bat
+.ipynb_checkpoints

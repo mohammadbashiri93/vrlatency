@@ -73,6 +73,13 @@ class BaseExperiment(pyglet.window.Window):
         disp_params['Monitors'] = _get_display_name()
         self.params.update(disp_params)
         self.params['Trials'] = self.trials
+        self.params['TrialDelay'] = self.trial_delay
+        self.params['OnWidth'] = str(on_width)
+        self.params['BackgroundColor'] = str(bckgrnd_color)
+        if self.stim:
+            self.params['StimSize'] = stim.size
+            self.params['StimColor'] = stim.color
+            self.params['StimPosition'] = stim.position
 
         experiment_type = self.params['Experiment'].split('Exp')[0]
         self.filename =  '{}_{}.csv'.format(experiment_type.lower(), datetime.now().strftime('%Y%m%d_%H%M%S'))

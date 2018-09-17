@@ -4,7 +4,7 @@ from struct import unpack, pack
 from io import BytesIO
 import time
 
-INPUT_BUFFER_MAXSIZE = 1600
+INPUT_BUFFER_MAXSIZE = 1000000  # TODO: Find better estimate of max buffer size.
 
 
 class Arduino(object):
@@ -18,7 +18,7 @@ class Arduino(object):
         - n_points:
         - channel:
     """
-    options = {'Display': dict(packet_fmt='IH', packet_size=6, exp_char='D'),
+    options = {'Display': dict(packet_fmt='HH', packet_size=4, exp_char='D'),
                'Total': dict(packet_fmt='I2H?', packet_size=9, exp_char='S'),
                'Tracking': dict(packet_fmt='?', packet_size=1, exp_char='T'),
                }
