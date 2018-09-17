@@ -79,15 +79,15 @@ def get_total_latencies(df):
     return latencies
 
 
-def get_transition_samplenum(session):
-    transition_samples = []
-    for _, trial in session.groupby('Trial'):
-        try:
-            transition_sample = trial[trial.TrialTransitionTime == 0].Sample.values[0]
-        except:
-            transition_sample = np.nan
-        transition_samples.append(transition_sample)
-    return transition_samples
+# def get_transition_samplenum(session):
+#     transition_samples = []
+#     for _, trial in session.groupby('Trial'):
+#         try:
+#             transition_sample = trial[trial.TrialTransitionTime == 0].Sample.values[0]
+#         except:
+#             transition_sample = np.nan
+#         transition_samples.append(transition_sample)
+#     return transition_samples
 
 
 def transform_display_df(df, session, thresh=.75):
@@ -112,6 +112,7 @@ def compute_sse(x1, x2, win=100):
 
 
 def find_global_minimum(x):
+    """returns indexed position of the  the global minim of a given signal"""
     dx, ddx = np.diff(x), np.diff(x, 2)
     is_zerocrossing = (dx[1:] * dx[:-1]) < 0
     is_positive_slope = ddx > 0
@@ -124,7 +125,7 @@ def find_global_minimum(x):
 
 
 def shift_by_sse(dd):
-
+    """Using Sum of Squared errors between brightness signal of each trial to overlay them"""
     sampling_rate = np.diff(dd.TrialTime.values[:2])[0]
     query = '(-5 < TrialTransitionTime) & (TrialTransitionTime < 5)'
     dd2 = dd.query(query)
@@ -143,17 +144,8 @@ def shift_by_sse(dd):
     return dd
 
 
-# def get_display_df(filename, thresh=.75):
-#     """"""
-#     session = filename.split('.')[0]
-#     df = read_csv(filename)
-#     dfl = transform_display_df(df, session, thresh=thresh)
-#
-#     return shift_by_sse(dfl.copy())
-
-
 def plot_shifted_brightness_over_session(dd, ax=None):
-    """"""
+    """creates a plot of all the shifted (overlaid on each other) brightness values over a single session"""
     ax = ax if ax else plt.gca()
     mean_latency = dd.groupby('Trial').DisplayLatency.mean().mean()
     for trialnum, trial in dd.groupby('Trial'):
@@ -162,7 +154,7 @@ def plot_shifted_brightness_over_session(dd, ax=None):
     return ax
 
 def plot_brightness_threshold(sensor_brightness, thresh=.75, ax=None):
-    """"""
+    """Create a line plot for the threshold values chosen for latecny measurement"""
     ax = ax if ax else plt.gca()
     ax.hlines([perc_range(sensor_brightness, thresh)], *ax.get_xlim(), 'b', label='Threshold', linewidth=2,
                linestyle='dotted')
@@ -199,7 +191,7 @@ def plot_display_latency_over_session(trials, latencies, ax=None):
 
 def plot_display_latency_distribution(latencies, ax=None):
     """"""
-    ax = ax if ax else plt.gcf()
+    ax = ax if ax else plt.gca()
     sns.distplot(latencies[np.isnan(latencies) == False],
                  hist=True, color="k", kde_kws={"linewidth": 3, "alpha": 1}, vertical=True)
     return ax
