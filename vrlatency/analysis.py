@@ -101,6 +101,7 @@ def transform_display_df(df, session, thresh=.75):
     latencies = get_display_latencies(df, thresh=thresh).to_frame().reset_index()
     dfl = pd.merge(df, latencies, on='Trial')
     dfl['TrialTransitionTime'] = dfl['TrialTime'] - dfl['DisplayLatency']
+    dfl['ThreshPerc'] = thresh
 
     return dfl
 
@@ -142,16 +143,13 @@ def shift_by_sse(dd):
     return dd
 
 
-def get_display_df(filename, thresh=.75):
-    """"""
-    session = filename.split('.')[0]
-    df = read_csv(filename)
-    dfl = transform_display_df(df, session, thresh=thresh)
-
-    # import ipdb
-    # ipdb.set_trace()
-
-    return shift_by_sse(dfl.copy())
+# def get_display_df(filename, thresh=.75):
+#     """"""
+#     session = filename.split('.')[0]
+#     df = read_csv(filename)
+#     dfl = transform_display_df(df, session, thresh=thresh)
+#
+#     return shift_by_sse(dfl.copy())
 
 
 def plot_shifted_brightness_over_session(dd, ax=None):
@@ -207,10 +205,9 @@ def plot_display_latency_distribution(latencies, ax=None):
     return ax
 
 
-def plot_display_figures(filename, thresh=.75):
+def plot_display_figures(dd):
     """Returns a figure with all info concerning display experiment latencies."""
 
-    dd = get_display_df(filename, thresh=thresh)
     session = dd.Session.values[0]
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(8, 6), gridspec_kw={'width_ratios': [3, 1]})
@@ -219,7 +216,7 @@ def plot_display_figures(filename, thresh=.75):
                                          nsamples_per_trial=dd.groupby('Trial')['DisplayLatency'].agg(len).min(),
                                          ax=ax1)
     plot_shifted_brightness_over_session(dd, ax=ax1)
-    plot_brightness_threshold(sensor_brightness=dd['SensorBrightness'], thresh=thresh, ax=ax1)
+    plot_brightness_threshold(sensor_brightness=dd['SensorBrightness'], thresh=dd['ThreshPerc'].values[0], ax=ax1)
     plot_display_brightness_distribution(sensor_brightness=dd['SensorBrightness'], ax=ax2)
     ax1.set_ylim(*ax2.get_ylim())
     ax2.set(xticklabels='', yticklabels='')

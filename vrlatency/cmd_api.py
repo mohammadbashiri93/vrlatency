@@ -1,6 +1,6 @@
 import click
 import vrlatency as vrl
-from vrlatency.analysis import perc_range
+from vrlatency.analysis import perc_range, read_csv, transform_display_df, shift_by_sse, plot_display_figures
 import matplotlib.pyplot as plt
 import seaborn as sns
 import time
@@ -105,22 +105,12 @@ def display(port, baudrate, trials, stimsize, delay, screen, interval, jitter, a
         exp.run()
         exp.save(filename=path.join(output, exp.filename))
 
-        # df = vrl.read_csv(path.join(output, exp.filename))
-        # df['TrialTime'] = df.groupby('Trial').Time.apply(lambda x: x - x.min())
-        #
-        # click.echo(df.head())
-        # latencies = vrl.get_display_latencies(df)
-        #
-        # fig, (ax1, ax2, ax3) = plt.subplots(ncols=3)
-        # sns.distplot(df['SensorBrightness'], bins=50, ax=ax1)
-        # ax2.scatter(df['TrialTime'] / 1000, df['SensorBrightness'], alpha=.1, s=.2)
-        # ax2.hlines([perc_range(df.SensorBrightness, .75)], *ax2.get_xlim())
-        #
-        # sns.distplot(latencies.iloc[1:] / 1000., bins=80, ax=ax3)
-        # ax3.set_xlim(0, 50)
-        # plt.show()
-
-        vrl.analysis.display_figures(exp.filename)
+        df = read_csv(exp.filename)
+        session_name = exp.filename.split('.')[0]
+        df_transformed = transform_display_df(df, session=session_name, thresh=thresh)
+        df_shifted = shift_by_sse(df_transformed.copy())
+        plot_display_figures(df_shifted)
+        plt.show()
 
 
 @cli.command()
