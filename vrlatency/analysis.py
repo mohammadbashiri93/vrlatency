@@ -89,6 +89,24 @@ def get_total_latencies(df):
 #         transition_samples.append(transition_sample)
 #     return transition_samples
 
+def add_clusters(dd):
+    """Depending on the SSE checks if there are more than one cluster among trials"""
+    query = '(-5 < TrialTransitionTime) & (TrialTransitionTime < 5)'
+    dd2 = dd.query(query)
+    ref_trial = dd2[dd2.DisplayLatency == dd2.DisplayLatency.min()]  # Min latency used as reference
+    ref_sensor = ref_trial['SensorBrightness'].values
+
+    winsize = 10
+    for trialnum, trial in dd2.groupby('Trial'):
+        test_sensor = trial['SensorBrightness'].values
+        residuals = compute_sse(test_sensor, ref_sensor, win=winsize)
+        residuals = residuals / residuals.max()
+        minimum = find_global_minimum(residuals)
+        sse_thresh = .1
+        dd.loc[dd.Trial == trialnum, 'Cluster'] = 0 if residuals[minimum] < sse_thresh else 1
+
+    return dd
+
 
 def transform_display_df(df, session, thresh=.75):
     """Return dataframe object needed for the analysis"""
@@ -103,7 +121,7 @@ def transform_display_df(df, session, thresh=.75):
     dfl['TrialTransitionTime'] = dfl['TrialTime'] - dfl['DisplayLatency']
     dfl['ThreshPerc'] = thresh
 
-    return dfl
+    return add_clusters(dfl)
 
 
 def compute_sse(x1, x2, win=100):
@@ -157,7 +175,7 @@ def plot_shifted_brightness_over_session(time, sensor_brightness, shift_by, tria
     ax = ax if ax else plt.gca()
     for trial in trial_idx.unique():
         # ax.scatter(time[trial_idx == trial] + shift_by, sensor_brightness[trial_idx == trial])#, c='r', linewidth=1)#, alpha=.01)
-        ax.plot(time[trial_idx == trial] + shift_by, sensor_brightness[trial_idx == trial])#, c='r', linewidth=1)#, alpha=.01)
+        ax.plot(time[trial_idx == trial] + shift_by, sensor_brightness[trial_idx == trial], c='r', linewidth=1, alpha=.01)
 
     return ax
 
