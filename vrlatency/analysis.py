@@ -89,20 +89,18 @@ def get_total_latencies(df):
 #         transition_samples.append(transition_sample)
 #     return transition_samples
 
-def add_clusters(dd):
+def add_clusters(dd, winsize=10, sse_thresh=.1):
     """Depending on the SSE checks if there are more than one cluster among trials"""
     query = '(-5 < TrialTransitionTime) & (TrialTransitionTime < 5)'
     dd2 = dd.query(query)
     ref_trial = dd2[dd2.DisplayLatency == dd2.DisplayLatency.min()]  # Min latency used as reference
     ref_sensor = ref_trial['SensorBrightness'].values
 
-    winsize = 10
     for trialnum, trial in dd2.groupby('Trial'):
         test_sensor = trial['SensorBrightness'].values
         residuals = compute_sse(test_sensor, ref_sensor, win=winsize)
         residuals = residuals / residuals.max()
         minimum = find_global_minimum(residuals)
-        sse_thresh = .1
         dd.loc[dd.Trial == trialnum, 'Cluster'] = 0 if residuals[minimum] < sse_thresh else 1
 
     return dd
