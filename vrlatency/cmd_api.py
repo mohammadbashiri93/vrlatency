@@ -119,15 +119,17 @@ def display(port, baudrate, trials, stimsize, delay, screen, interval, jitter, a
 @simplify_exception_output(verbose=True)
 @add_options(common_options)
 @click.option('--rigid_body', default='LED', help="Name of rigid body from tracker that represents the arduino's LEDs.")
-def tracking(port, baudrate, trials, interval, jitter, rigid_body):
+@click.option('--output', default='.', type=click.Path(exists=True, file_okay=False, dir_okay=True, writable=True))
+def tracking(port, baudrate, trials, interval, jitter, rigid_body, output):
 
     led = get_rigid_body(rigid_body)
 
-    arduino = vrl.Arduino.from_experiment_type(experiment_type='Tracking', port=port, baudrate=baudrate)
+    arduino = vrl.Arduino.from_experiment_type(experiment_type='Tracking', port=port, baudrate=baudrate, nsamples=1)
     on_width = [interval, interval * 2] if jitter else interval
     exp = vrl.TrackingExperiment(arduino=arduino, trials=trials, fullscreen=True, on_width=on_width, rigid_body=led)
     exp.run()
-    exp.save()
+    print(path.join(output, exp.filename))
+    exp.save(filename=path.join(output, exp.filename))
 
 
 @cli.command()
