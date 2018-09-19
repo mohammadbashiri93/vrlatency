@@ -108,7 +108,7 @@ def display(port, baudrate, trials, stimsize, delay, screen, interval, jitter, a
 
         df = read_csv(path=path.join(output, exp.filename))  # TODO: fix inconsistent arg name! path or filename!?
         session_name = exp.filename.split('.')[0]
-        df_transformed = transform_display_df(df, session=session_name, thresh=.2)
+        df_transformed = transform_display_df(df, session=session_name, thresh=.75)
         df_clustered = df_transformed[df_transformed.Cluster == 0].copy()
         df_shifted = shift_by_sse(df_clustered)
         plot_display_figures(df_shifted)
