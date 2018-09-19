@@ -76,8 +76,9 @@ void loop() {
 
     /*  Display Experiment */
     if (command.experiment_type == 68){ // ord('D') - Display
-    digitalWrite(9, LOW);
-    digitalWrite(11, LOW);
+      digitalWrite(9, LOW);
+      digitalWrite(11, LOW);
+      
       struct Packet {
         unsigned int time_m;
         int left; 
