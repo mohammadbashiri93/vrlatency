@@ -76,8 +76,9 @@ void loop() {
 
     /*  Display Experiment */
     if (command.experiment_type == 68){ // ord('D') - Display
-    digitalWrite(9, LOW);
-    digitalWrite(11, LOW);
+      digitalWrite(9, LOW);
+      digitalWrite(11, LOW);
+      
       struct Packet {
         unsigned int time_m;
         int left; 
@@ -87,9 +88,9 @@ void loop() {
       for (i=0; i < command.nsamples; i++){
         averaged_sensor_value = (analogRead(analogPin_Left) + analogRead(analogPin_Right)) / 2;
         packets[i] = {(unsigned int)(micros() - start_micros), averaged_sensor_value};
-        delayMicroseconds(100);
+//        delayMicroseconds(100);
       }
-      Serial.write((byte*)&packets, 4*(command.nsamples)); // 4 + 2
+      Serial.write((byte*)&packets, 4*(command.nsamples)); // 2 + 2
     }
 
 
@@ -110,6 +111,7 @@ void loop() {
 
     /* Total Experiment */
     else if (command.experiment_type == 83){  // ord('S') - Total
+
       if (led_state){
         digitalWrite(right_LED, LOW);
         digitalWrite(left_LED, HIGH);
@@ -121,11 +123,20 @@ void loop() {
         led_state = 1;
         }
       
-      for (i=0; i<command.nsamples; i++){
-        Packet data = {micros(), analogRead(analogPin_Left), analogRead(analogPin_Right), led_state};
-        Serial.write((byte*)&data, 9); // 4 + 2 + 2 + 1
-        }
+      struct Packet {
+        unsigned int time_m;
+        int left;
+        int right;
+        bool led_state;
+      };
+      Packet packets[command.nsamples];
+      
+      for (i=0; i < command.nsamples; i++){
+        packets[i] = {(unsigned int)(micros() - start_micros), analogRead(analogPin_Left), analogRead(analogPin_Right), led_state};
+//        delayMicroseconds(100);
       }
+      Serial.write((byte*)&packets, 7*(command.nsamples)); // 2 + 2 + 2 + 1
+    }
       
       else if (received_data == 82){ // ord('R') - connection response
         Serial.write("yes");

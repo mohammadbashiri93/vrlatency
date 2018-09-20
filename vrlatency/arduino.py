@@ -1,6 +1,6 @@
 import serial
 import serial.tools.list_ports
-from struct import unpack, pack
+from struct import unpack, pack, error
 from io import BytesIO
 import time
 
@@ -19,7 +19,7 @@ class Arduino(object):
         - channel:
     """
     options = {'Display': dict(packet_fmt='HH', packet_size=4, exp_char='D'),
-               'Total': dict(packet_fmt='I2H?', packet_size=9, exp_char='S'),
+               'Total': dict(packet_fmt='3H?', packet_size=7, exp_char='S'),
                'Tracking': dict(packet_fmt='?', packet_size=1, exp_char='T'),
                }
 
@@ -96,13 +96,15 @@ class Arduino(object):
 
         return dd
 
-    def write(self, msg):
+    def write(self, msg, nsamples=None):
         """ Write to arduino over serial channel
 
         Arguments:
             - msg (str): message to be sent to arduino
         """
-        packet = pack('<cH', bytes(msg, 'utf-8'), self.nsamples)
+
+        nsamples = nsamples if nsamples else self.nsamples
+        packet = pack('<cH', bytes(msg, 'utf-8'), nsamples)
         self.channel.write(packet)
 
     def init_next_trial(self):

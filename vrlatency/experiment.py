@@ -16,6 +16,7 @@ platform = pyglet.window.get_platform()
 display = platform.get_default_display()
 screens = display.get_screens()
 
+
 class BaseExperiment(pyglet.window.Window):
     """Experiment abstract base method
 
@@ -169,7 +170,7 @@ class TrackingExperiment(BaseExperiment):
         3. Timing between the movement command and changes in position are compared and the tracking delay is characterized
     """
 
-    def __init__(self, rigid_body, on_width=.04, *args, **kwargs):
+    def __init__(self, rigid_body, *args, **kwargs):
         """ Integrates all the needed elements for tracking latency measuremnt
 
         Arguments:
@@ -180,7 +181,7 @@ class TrackingExperiment(BaseExperiment):
         """
         super(self.__class__, self).__init__(*args, visible=False, **kwargs)
         self.rigid_body = rigid_body
-        self.on_width = _gen_iter(on_width)
+        # self.on_width = _gen_iter(on_width)
         self.data_columns = ['Trial', 'Time', 'RigidBody_Position', 'LED_Position']
 
     def run_trial(self):
@@ -198,10 +199,11 @@ class TrackingExperiment(BaseExperiment):
         data = [el + [led_pos] for el in data]
         self.data.extend(data) if self.arduino else None
 
+
 class TotalExperiment(BaseExperiment):
     """Experiment object for total latency measurement
 
-    NOTES: 
+    NOTES: s
         In this experiment the timing information is recorded by Arduino
         Here is a description of a single trial:
         1. LED lights moves from one set of LEDs to another - timing info recorded
@@ -227,7 +229,7 @@ class TotalExperiment(BaseExperiment):
         self.stim_distance = stim_distance
         mean_rb_pos, n_checks = 0, 100
         for _ in tqdm(range(n_checks), ascii=True, desc="Finding the mean"):
-            self.arduino.init_next_trial()
+            self.arduino.write('T', nsamples=1)  # self.arduino.init_next_trial()
             sleep(.05)
             mean_rb_pos += self.rigid_body.position.z / float(n_checks)
             self.arduino.channel.read_all()  # empty the buffer (because Arduino is sending info anyway)
