@@ -16,6 +16,7 @@ platform = pyglet.window.get_platform()
 display = platform.get_default_display()
 screens = display.get_screens()
 
+
 class BaseExperiment(pyglet.window.Window):
     """Experiment abstract base method
 
