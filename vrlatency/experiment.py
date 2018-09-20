@@ -228,7 +228,7 @@ class TotalExperiment(BaseExperiment):
         self.stim_distance = stim_distance
         mean_rb_pos, n_checks = 0, 100
         for _ in tqdm(range(n_checks), ascii=True, desc="Finding the mean"):
-            self.arduino.init_next_trial()
+            self.arduino.write('T', nsamples=1)  # self.arduino.init_next_trial()
             sleep(.05)
             mean_rb_pos += self.rigid_body.position.z / float(n_checks)
             self.arduino.channel.read_all()  # empty the buffer (because Arduino is sending info anyway)
